@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   title: "Post a New Car",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function NewListingPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/auth/login");

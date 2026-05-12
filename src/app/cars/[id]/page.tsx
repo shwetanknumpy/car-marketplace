@@ -10,6 +10,8 @@ import InquiryForm from "@/components/inquiry-form";
 import ImageGallery from "@/components/image-gallery";
 import { Badge } from "@/components/ui/badge";
 
+export const dynamic = "force-dynamic";
+
 interface CarDetailPageProps {
   params: { id: string };
 }

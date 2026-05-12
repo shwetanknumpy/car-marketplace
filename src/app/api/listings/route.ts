@@ -5,6 +5,8 @@ import { getListings, createListing, getDistinctBrands } from "@/lib/db/listings
 import { listingSchema } from "@/lib/validations";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

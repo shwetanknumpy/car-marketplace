@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createUser, getUserByEmail } from "@/lib/db/users";
 import { signupSchema } from "@/lib/validations";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

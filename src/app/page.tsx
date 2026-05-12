@@ -4,6 +4,8 @@ import { getFeaturedListings } from "@/lib/db/listings";
 import ListingCard from "@/components/listing-card";
 import SearchBar from "@/components/search-bar";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const featuredListings = await getFeaturedListings(6);
 

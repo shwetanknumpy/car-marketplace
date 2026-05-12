@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   title: "Edit Listing",
 };
 
+export const dynamic = "force-dynamic";
+
 interface EditListingPageProps {
   params: { id: string };
 }

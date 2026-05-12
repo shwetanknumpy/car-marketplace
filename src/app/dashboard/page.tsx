@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: "Manage your car listings and inquiries on AutoMarket.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/auth/login");

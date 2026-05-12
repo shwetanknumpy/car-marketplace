@@ -5,6 +5,8 @@ import { createInquiry, checkDuplicateInquiry } from "@/lib/db/inquiries";
 import { getListingById } from "@/lib/db/listings";
 import { inquirySchema } from "@/lib/validations";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);

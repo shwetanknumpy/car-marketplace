@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { markInquiryRead } from "@/lib/db/inquiries";
 
+export const dynamic = "force-dynamic";
+
 interface RouteParams {
   params: { id: string };
 }

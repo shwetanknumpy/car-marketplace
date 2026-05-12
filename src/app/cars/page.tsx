@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Browse all available cars on AutoMarket. Filter by brand, price, year, and mileage.",
 };
 
+export const dynamic = "force-dynamic";
+
 interface CarsPageProps {
   searchParams: {
     brand?: string;

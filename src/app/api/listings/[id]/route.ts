@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { getListingById, updateListing, deleteListing } from "@/lib/db/listings";
 import { listingSchema } from "@/lib/validations";
 
+export const dynamic = "force-dynamic";
+
 interface RouteParams {
   params: { id: string };
 }
