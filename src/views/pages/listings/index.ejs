@@ -1,0 +1,100 @@
+<div class="browse-layout">
+  <aside class="filters card">
+    <h2>Filter</h2>
+    <form action="/cars" method="get" id="filter-form">
+      <label>
+        Keyword
+        <input type="search" name="q" value="<%= filters.q || '' %>" placeholder="Any text" />
+      </label>
+
+      <label>
+        Make
+        <select name="make">
+          <option value="">Any</option>
+          <% makes.forEach((make) => { %>
+            <option value="<%= make %>" <%= filters.make === make ? 'selected' : '' %>><%= make %></option>
+          <% }); %>
+        </select>
+      </label>
+
+      <label>
+        Model
+        <input type="text" name="model" value="<%= filters.model || '' %>" placeholder="Any" list="model-options" />
+        <datalist id="model-options">
+          <% models.forEach((model) => { %><option value="<%= model %>"></option><% }); %>
+        </datalist>
+      </label>
+
+      <fieldset>
+        <legend>Year</legend>
+        <input type="number" name="minYear" value="<%= filters.minYear || '' %>" placeholder="From" min="1900" />
+        <input type="number" name="maxYear" value="<%= filters.maxYear || '' %>" placeholder="To" min="1900" />
+      </fieldset>
+
+      <fieldset>
+        <legend>Price ($)</legend>
+        <input type="number" name="minPrice" value="<%= filters.minPrice || '' %>" placeholder="Min" min="0" />
+        <input type="number" name="maxPrice" value="<%= filters.maxPrice || '' %>" placeholder="Max" min="0" />
+      </fieldset>
+
+      <label>
+        Max mileage
+        <input type="number" name="maxMileage" value="<%= filters.maxMileage || '' %>" placeholder="Any" min="0" />
+      </label>
+
+      <label>
+        Fuel
+        <select name="fuelType">
+          <option value="">Any</option>
+          <% fuelTypes.forEach((fuel) => { %>
+            <option value="<%= fuel %>" <%= filters.fuelType === fuel ? 'selected' : '' %>><%= fuel %></option>
+          <% }); %>
+        </select>
+      </label>
+
+      <label>
+        Transmission
+        <select name="transmission">
+          <option value="">Any</option>
+          <% transmissions.forEach((t) => { %>
+            <option value="<%= t %>" <%= filters.transmission === t ? 'selected' : '' %>><%= t %></option>
+          <% }); %>
+        </select>
+      </label>
+
+      <label>
+        Sort by
+        <select name="sort">
+          <% const sorts = [['newest','Newest'],['price_asc','Price: low to high'],['price_desc','Price: high to low'],['year_desc','Year: newest'],['mileage_asc','Mileage: lowest']]; %>
+          <% sorts.forEach(([value, label]) => { %>
+            <option value="<%= value %>" <%= filters.sort === value ? 'selected' : '' %>><%= label %></option>
+          <% }); %>
+        </select>
+      </label>
+
+      <button class="btn btn-primary btn-block" type="submit">Apply filters</button>
+      <a class="btn btn-ghost btn-block" href="/cars">Reset</a>
+    </form>
+  </aside>
+
+  <section class="results">
+    <div class="section-head">
+      <h1>Cars for sale</h1>
+      <p class="muted"><%= meta.total %> match<%= meta.total === 1 ? '' : 'es' %></p>
+    </div>
+
+    <% if (!listings.length) { %>
+      <div class="empty-state">
+        <p>No cars match those filters.</p>
+        <a class="btn" href="/cars">Clear filters</a>
+      </div>
+    <% } else { %>
+      <div class="grid">
+        <% listings.forEach((listing) => { %>
+          <%- include('../../partials/listing-card', { listing }) %>
+        <% }); %>
+      </div>
+      <%- include('../../partials/pagination', { meta, basePath: '/cars' }) %>
+    <% } %>
+  </section>
+</div>

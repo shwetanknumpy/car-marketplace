@@ -1,0 +1,24 @@
+<article class="card listing-card">
+  <a class="listing-thumb" href="/cars/<%= listing._id %>">
+    <% if (listing.images && listing.images.length) { %>
+      <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" loading="lazy" />
+    <% } else { %>
+      <div class="listing-thumb-empty">No photo</div>
+    <% } %>
+    <% if (listing.status && listing.status !== 'active') { %>
+      <span class="badge badge-<%= listing.status %>"><%= listing.status %></span>
+    <% } %>
+  </a>
+
+  <div class="listing-body">
+    <h3><a href="/cars/<%= listing._id %>"><%= listing.title %></a></h3>
+    <p class="price">$<%= Number(listing.price).toLocaleString('en-US') %></p>
+    <p class="muted meta">
+      <%= listing.year %> · <%= listing.make %> <%= listing.model %>
+      · <%= Number(listing.mileage).toLocaleString('en-US') %> mi
+    </p>
+    <p class="muted meta">
+      <%= listing.fuelType %> · <%= listing.transmission %><%= listing.location ? ' · ' + listing.location : '' %>
+    </p>
+  </div>
+</article>

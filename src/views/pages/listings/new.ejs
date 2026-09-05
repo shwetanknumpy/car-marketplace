@@ -1,0 +1,13 @@
+<section class="narrow">
+  <h1>Post a car</h1>
+  <p class="muted">Save as a draft while you gather photos, or publish it straight away.</p>
+
+  <form class="card" data-listing-form data-mode="create">
+    <%- include('_form-fields', { listing: null, fuelTypes, transmissions, statuses }) %>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save listing</button>
+      <a class="btn btn-ghost" href="/dashboard">Cancel</a>
+    </div>
+    <p class="form-error" data-error hidden></p>
+  </form>
+</section>

@@ -1,0 +1,76 @@
+<div class="form-grid">
+  <label class="span-2">
+    Title
+    <input type="text" name="title" minlength="5" maxlength="140" required
+      value="<%= listing ? listing.title : '' %>" placeholder="2018 Honda Civic EX — one owner" />
+  </label>
+
+  <label>
+    Make
+    <input type="text" name="make" maxlength="60" required value="<%= listing ? listing.make : '' %>" />
+  </label>
+
+  <label>
+    Model
+    <input type="text" name="model" maxlength="60" required value="<%= listing ? listing.model : '' %>" />
+  </label>
+
+  <label>
+    Year
+    <input type="number" name="year" min="1900" max="<%= new Date().getFullYear() + 1 %>" required
+      value="<%= listing ? listing.year : '' %>" />
+  </label>
+
+  <label>
+    Price ($)
+    <input type="number" name="price" min="0" step="1" required value="<%= listing ? listing.price : '' %>" />
+  </label>
+
+  <label>
+    Mileage (mi)
+    <input type="number" name="mileage" min="0" step="1" required value="<%= listing ? listing.mileage : '' %>" />
+  </label>
+
+  <label>
+    Fuel type
+    <select name="fuelType">
+      <% fuelTypes.forEach((fuel) => { %>
+        <option value="<%= fuel %>" <%= listing && listing.fuelType === fuel ? 'selected' : '' %>><%= fuel %></option>
+      <% }); %>
+    </select>
+  </label>
+
+  <label>
+    Transmission
+    <select name="transmission">
+      <% transmissions.forEach((t) => { %>
+        <option value="<%= t %>" <%= listing && listing.transmission === t ? 'selected' : '' %>><%= t %></option>
+      <% }); %>
+    </select>
+  </label>
+
+  <label>
+    Location
+    <input type="text" name="location" maxlength="120" value="<%= listing ? listing.location : '' %>" placeholder="Austin, TX" />
+  </label>
+
+  <label class="span-2">
+    Description
+    <textarea name="description" rows="6" minlength="20" maxlength="4000" required
+      placeholder="Service history, condition, why you're selling…"><%= listing ? listing.description : '' %></textarea>
+  </label>
+
+  <label class="span-2">
+    Image URLs (one per line, up to 8)
+    <textarea name="images" rows="3" placeholder="https://example.com/photo-1.jpg"><%= listing && listing.images ? listing.images.join('\n') : '' %></textarea>
+  </label>
+
+  <label>
+    Status
+    <select name="status">
+      <% statuses.forEach((status) => { %>
+        <option value="<%= status %>" <%= listing && listing.status === status ? 'selected' : '' %>><%= status %></option>
+      <% }); %>
+    </select>
+  </label>
+</div>

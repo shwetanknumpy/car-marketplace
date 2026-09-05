@@ -1,0 +1,16 @@
+<section class="narrow">
+  <div class="section-head">
+    <h1>Edit listing</h1>
+    <a href="/cars/<%= listing._id %>">View public page →</a>
+  </div>
+
+  <form class="card" data-listing-form data-mode="edit" data-listing-id="<%= listing._id %>">
+    <%- include('_form-fields', { listing, fuelTypes, transmissions, statuses }) %>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save changes</button>
+      <a class="btn btn-ghost" href="/dashboard">Back to dashboard</a>
+      <button class="btn btn-danger" type="button" data-delete-listing="<%= listing._id %>">Delete</button>
+    </div>
+    <p class="form-error" data-error hidden></p>
+  </form>
+</section>

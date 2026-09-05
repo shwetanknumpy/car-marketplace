@@ -1,0 +1,39 @@
+<section>
+  <h1>My inquiries</h1>
+
+  <% if (!inquiries.length) { %>
+    <div class="empty-state">
+      <p>You have not contacted any sellers yet.</p>
+      <a class="btn btn-primary" href="/cars">Browse cars</a>
+    </div>
+  <% } else { %>
+    <ul class="inquiry-list">
+      <% inquiries.forEach((inquiry) => { %>
+        <li class="card inquiry">
+          <header class="inquiry-head">
+            <div>
+              <a href="/cars/<%= inquiry.listing.id %>"><strong><%= inquiry.listing.title %></strong></a>
+              <div class="muted">$<%= Number(inquiry.listing.price).toLocaleString('en-US') %></div>
+            </div>
+            <span class="badge badge-<%= inquiry.status %>"><%= inquiry.status %></span>
+          </header>
+
+          <p class="inquiry-message"><%= inquiry.message %></p>
+
+          <% if (inquiry.reply && inquiry.reply.message) { %>
+            <div class="inquiry-reply">
+              <strong>Seller replied</strong>
+              <p><%= inquiry.reply.message %></p>
+            </div>
+          <% } %>
+
+          <footer class="inquiry-foot">
+            <span class="muted"><%= new Date(inquiry.createdAt).toLocaleString('en-US') %></span>
+            <button class="btn btn-sm btn-ghost" type="button" data-withdraw-inquiry="<%= inquiry._id %>">Withdraw</button>
+          </footer>
+        </li>
+      <% }); %>
+    </ul>
+    <%- include('../../partials/pagination', { meta, basePath: '/inquiries' }) %>
+  <% } %>
+</section>

@@ -1,0 +1,48 @@
+<section class="narrow">
+  <h1>My account</h1>
+
+  <form class="card" data-profile-form>
+    <label>
+      Name
+      <input type="text" name="name" minlength="2" maxlength="80" required value="<%= profile.name %>" />
+    </label>
+    <label>
+      Email
+      <input type="email" value="<%= profile.email %>" disabled />
+      <small class="muted">Email cannot be changed.</small>
+    </label>
+    <label>
+      Phone
+      <input type="tel" name="phone" maxlength="30" value="<%= profile.phone || '' %>" />
+    </label>
+    <label>
+      Location
+      <input type="text" name="location" maxlength="120" value="<%= profile.location || '' %>" />
+    </label>
+    <p class="muted">Account type: <strong><%= profile.role %></strong></p>
+    <button class="btn btn-primary" type="submit">Save profile</button>
+    <p class="form-error" data-error hidden></p>
+  </form>
+
+  <% if (profile.role === 'buyer') { %>
+    <div class="card">
+      <h2>Start selling</h2>
+      <p class="muted">Upgrade to a seller account to publish and manage listings.</p>
+      <button class="btn btn-primary" type="button" data-become-seller>Become a seller</button>
+    </div>
+  <% } %>
+
+  <form class="card" data-password-form>
+    <h2>Change password</h2>
+    <label>
+      Current password
+      <input type="password" name="currentPassword" autocomplete="current-password" required />
+    </label>
+    <label>
+      New password
+      <input type="password" name="newPassword" minlength="8" autocomplete="new-password" required />
+    </label>
+    <button class="btn btn-primary" type="submit">Update password</button>
+    <p class="form-error" data-error hidden></p>
+  </form>
+</section>

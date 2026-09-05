@@ -1,0 +1,66 @@
+<section>
+  <div class="section-head">
+    <h1>Seller dashboard</h1>
+    <a class="btn btn-primary" href="/cars/new">Post a car</a>
+  </div>
+
+  <div class="stat-row">
+    <div class="card stat"><span class="stat-value"><%= stats.total %></span><span class="muted">Listings</span></div>
+    <div class="card stat"><span class="stat-value"><%= stats.active %></span><span class="muted">Active</span></div>
+    <div class="card stat"><span class="stat-value"><%= stats.drafts %></span><span class="muted">Drafts</span></div>
+    <div class="card stat"><span class="stat-value"><%= stats.sold %></span><span class="muted">Sold</span></div>
+    <a class="card stat" href="/dashboard/inquiries">
+      <span class="stat-value"><%= stats.unread %></span>
+      <span class="muted">Unread inquiries</span>
+    </a>
+  </div>
+
+  <form class="inline-filters" action="/dashboard" method="get">
+    <select name="status" onchange="this.form.submit()" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <% statuses.forEach((status) => { %>
+        <option value="<%= status %>" <%= filters.status === status ? 'selected' : '' %>><%= status %></option>
+      <% }); %>
+    </select>
+    <noscript><button class="btn btn-sm" type="submit">Filter</button></noscript>
+  </form>
+
+  <% if (!listings.length) { %>
+    <div class="empty-state">
+      <p>You have not posted any cars yet.</p>
+      <a class="btn btn-primary" href="/cars/new">Post your first car</a>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Car</th><th>Price</th><th>Status</th><th>Inquiries</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% listings.forEach((listing) => { %>
+            <tr>
+              <td>
+                <a href="/cars/<%= listing._id %>"><strong><%= listing.title %></strong></a>
+                <div class="muted"><%= listing.year %> · <%= listing.make %> <%= listing.model %></div>
+              </td>
+              <td>$<%= Number(listing.price).toLocaleString('en-US') %></td>
+              <td><span class="badge badge-<%= listing.status %>"><%= listing.status %></span></td>
+              <td><%= listing.inquiryCount || 0 %></td>
+              <td class="row-actions">
+                <a class="btn btn-sm" href="/cars/<%= listing._id %>/edit">Edit</a>
+                <% if (listing.status !== 'sold') { %>
+                  <button class="btn btn-sm" type="button"
+                    data-set-status="<%= listing._id %>"
+                    data-status="<%= listing.status === 'active' ? 'sold' : 'active' %>">
+                    <%= listing.status === 'active' ? 'Mark sold' : 'Publish' %>
+                  </button>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <%- include('../../partials/pagination', { meta, basePath: '/dashboard' }) %>
+  <% } %>
+</section>
