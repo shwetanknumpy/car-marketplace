@@ -1,0 +1,23 @@
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="/">🚗 <span>AutoMarket</span></a>
+
+    <nav class="nav">
+      <a href="/cars" class="<%= currentPath.startsWith('/cars') ? 'active' : '' %>">Browse</a>
+
+      <% if (currentUser) { %>
+        <% if (currentUser.role === 'seller' || currentUser.role === 'admin') { %>
+          <a href="/dashboard" class="<%= currentPath.startsWith('/dashboard') ? 'active' : '' %>">Dashboard</a>
+          <a href="/cars/new" class="btn btn-sm btn-primary">Post a car</a>
+        <% } else { %>
+          <a href="/inquiries" class="<%= currentPath === '/inquiries' ? 'active' : '' %>">My inquiries</a>
+        <% } %>
+        <a href="/account" class="<%= currentPath === '/account' ? 'active' : '' %>"><%= currentUser.name %></a>
+        <button type="button" class="btn btn-sm btn-ghost" data-logout>Sign out</button>
+      <% } else { %>
+        <a href="/login">Sign in</a>
+        <a href="/signup" class="btn btn-sm btn-primary">Get started</a>
+      <% } %>
+    </nav>
+  </div>
+</header>

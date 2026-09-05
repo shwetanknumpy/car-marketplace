@@ -1,0 +1,61 @@
+<article class="detail">
+  <div class="detail-media">
+    <% if (listing.images && listing.images.length) { %>
+      <img class="detail-hero" src="<%= listing.images[0] %>" alt="<%= listing.title %>" />
+      <% if (listing.images.length > 1) { %>
+        <div class="thumb-row">
+          <% listing.images.slice(1).forEach((image) => { %>
+            <img src="<%= image %>" alt="" loading="lazy" />
+          <% }); %>
+        </div>
+      <% } %>
+    <% } else { %>
+      <div class="listing-thumb-empty tall">No photos</div>
+    <% } %>
+  </div>
+
+  <div class="detail-body">
+    <h1><%= listing.title %></h1>
+    <p class="price price-lg">$<%= Number(listing.price).toLocaleString('en-US') %></p>
+
+    <dl class="spec-grid">
+      <div><dt>Make</dt><dd><%= listing.make %></dd></div>
+      <div><dt>Model</dt><dd><%= listing.model %></dd></div>
+      <div><dt>Year</dt><dd><%= listing.year %></dd></div>
+      <div><dt>Mileage</dt><dd><%= Number(listing.mileage).toLocaleString('en-US') %> mi</dd></div>
+      <div><dt>Fuel</dt><dd><%= listing.fuelType %></dd></div>
+      <div><dt>Transmission</dt><dd><%= listing.transmission %></dd></div>
+      <% if (listing.location) { %><div><dt>Location</dt><dd><%= listing.location %></dd></div><% } %>
+      <div><dt>Status</dt><dd><%= listing.status %></dd></div>
+    </dl>
+
+    <h2>Description</h2>
+    <p class="description"><%= listing.description %></p>
+
+    <div class="card seller-card">
+      <h2>Seller</h2>
+      <p><strong><%= listing.seller.name %></strong></p>
+      <% if (currentUser && String(listing.seller.id) === String(currentUser.id)) { %>
+        <p class="muted">This is your listing.</p>
+        <a class="btn btn-primary" href="/cars/<%= listing._id %>/edit">Edit listing</a>
+      <% } %>
+    </div>
+
+    <% if (canInquire) { %>
+      <section class="card" id="inquiry">
+        <h2>Contact the seller</h2>
+        <form data-inquiry-form data-listing-id="<%= listing._id %>">
+          <label>
+            Your message
+            <textarea name="message" rows="5" minlength="10" maxlength="2000" required
+              placeholder="Hi — is this still available? I'd like to arrange a viewing."></textarea>
+          </label>
+          <button class="btn btn-primary" type="submit">Send inquiry</button>
+          <p class="form-error" data-error hidden></p>
+        </form>
+      </section>
+    <% } else if (!currentUser) { %>
+      <p class="muted"><a href="/login?returnTo=/cars/<%= listing._id %>">Sign in</a> to contact the seller.</p>
+    <% } %>
+  </div>
+</article>

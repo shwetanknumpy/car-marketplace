@@ -1,0 +1,60 @@
+<section>
+  <div class="section-head">
+    <h1>Inquiries received</h1>
+    <a href="/dashboard">← Back to dashboard</a>
+  </div>
+
+  <form class="inline-filters" action="/dashboard/inquiries" method="get">
+    <select name="status" onchange="this.form.submit()" aria-label="Filter by status">
+      <option value="">All</option>
+      <% ['unread', 'read', 'replied'].forEach((status) => { %>
+        <option value="<%= status %>" <%= filters.status === status ? 'selected' : '' %>><%= status %></option>
+      <% }); %>
+    </select>
+    <noscript><button class="btn btn-sm" type="submit">Filter</button></noscript>
+  </form>
+
+  <% if (!inquiries.length) { %>
+    <div class="empty-state"><p>No inquiries yet.</p></div>
+  <% } else { %>
+    <ul class="inquiry-list">
+      <% inquiries.forEach((inquiry) => { %>
+        <li class="card inquiry <%= inquiry.status === 'unread' ? 'is-unread' : '' %>" data-inquiry="<%= inquiry._id %>">
+          <header class="inquiry-head">
+            <div>
+              <a href="/cars/<%= inquiry.listing.id %>"><strong><%= inquiry.listing.title %></strong></a>
+              <div class="muted">
+                From <%= inquiry.buyer.name %> ·
+                <a href="mailto:<%= inquiry.buyer.email %>"><%= inquiry.buyer.email %></a>
+                <%= inquiry.buyer.phone ? ' · ' + inquiry.buyer.phone : '' %>
+              </div>
+            </div>
+            <span class="badge badge-<%= inquiry.status %>"><%= inquiry.status %></span>
+          </header>
+
+          <p class="inquiry-message"><%= inquiry.message %></p>
+
+          <% if (inquiry.reply && inquiry.reply.message) { %>
+            <div class="inquiry-reply">
+              <strong>Your reply</strong>
+              <p><%= inquiry.reply.message %></p>
+            </div>
+          <% } else { %>
+            <form class="inquiry-reply-form" data-reply-form data-inquiry-id="<%= inquiry._id %>">
+              <textarea name="message" rows="2" maxlength="2000" required placeholder="Reply to <%= inquiry.buyer.name %>…"></textarea>
+              <button class="btn btn-sm btn-primary" type="submit">Send reply</button>
+            </form>
+          <% } %>
+
+          <footer class="inquiry-foot">
+            <span class="muted"><%= new Date(inquiry.createdAt).toLocaleString('en-US') %></span>
+            <% if (inquiry.status === 'unread') { %>
+              <button class="btn btn-sm btn-ghost" type="button" data-mark-read="<%= inquiry._id %>">Mark read</button>
+            <% } %>
+          </footer>
+        </li>
+      <% }); %>
+    </ul>
+    <%- include('../../partials/pagination', { meta, basePath: '/dashboard/inquiries' }) %>
+  <% } %>
+</section>

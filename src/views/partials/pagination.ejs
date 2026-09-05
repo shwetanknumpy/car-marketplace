@@ -1,0 +1,31 @@
+<% if (meta && meta.totalPages > 1) { %>
+  <%
+    const base = typeof basePath !== 'undefined' ? basePath : currentPath;
+    const params = new URLSearchParams();
+    Object.entries(query || {}).forEach(([key, value]) => {
+      if (key !== 'page' && value !== undefined && value !== '') params.set(key, value);
+    });
+    const href = (page) => {
+      const p = new URLSearchParams(params);
+      p.set('page', page);
+      return `${base}?${p.toString()}`;
+    };
+  %>
+  <nav class="pagination" aria-label="Pagination">
+    <% if (meta.hasPrevPage) { %>
+      <a class="btn btn-sm" href="<%= href(meta.page - 1) %>">← Previous</a>
+    <% } else { %>
+      <span class="btn btn-sm disabled">← Previous</span>
+    <% } %>
+
+    <span class="muted">
+      Page <%= meta.page %> of <%= meta.totalPages %> · <%= meta.total %> result<%= meta.total === 1 ? '' : 's' %>
+    </span>
+
+    <% if (meta.hasNextPage) { %>
+      <a class="btn btn-sm" href="<%= href(meta.page + 1) %>">Next →</a>
+    <% } else { %>
+      <span class="btn btn-sm disabled">Next →</span>
+    <% } %>
+  </nav>
+<% } %>

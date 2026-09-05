@@ -1,274 +1,464 @@
-# 🚗 AutoMarket — Full-Stack Car Reselling Marketplace
+# 🚗 AutoMarket — Used-Car Marketplace
 
-A full-featured car marketplace built with **Next.js 14**, **TypeScript**, **Prisma**, **NextAuth**, and **Cloudinary**.
+A full-stack marketplace where **sellers publish and manage used-car listings** and
+**buyers browse and raise inquiries**, built on **Express.js** and **MongoDB** and
+structured along **MVC** lines.
 
----
-
-## ✨ Features
-
-- **Browse & Filter** — Search cars by brand, price range, year, and mileage
-- **Auth** — Email/password signup & login with JWT sessions (+ optional Google OAuth)
-- **Seller Dashboard** — Post, edit, mark sold, and delete listings
-- **Inquiry System** — Buyers can message sellers directly from car detail pages
-- **Image Upload** — Drag-and-drop multi-photo upload to Cloudinary (max 6 per listing)
-- **SEO** — Dynamic metadata on every car detail page
-- **Responsive** — Mobile-first, works on all screen sizes
+Role-based access separates the two workflows: a buyer account can browse, search
+and contact sellers; a seller account can publish, edit and retire listings and
+work an inquiry inbox. Every seller-only route is enforced server-side, so the
+separation survives URL manipulation.
 
 ---
 
-## 🛠 Tech Stack
+## Table of contents
 
-| Layer | Tech |
+- [Stack](#stack)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Data model](#data-model)
+- [Indexing strategy](#indexing-strategy)
+- [Search, filtering and pagination](#search-filtering-and-pagination)
+- [Authentication and authorization](#authentication-and-authorization)
+- [REST API reference](#rest-api-reference)
+- [Testing](#testing)
+- [Project layout](#project-layout)
+
+---
+
+## Stack
+
+| Layer | Choice |
 |---|---|
-| Frontend | Next.js 14 (App Router) + TypeScript |
-| Styling | Tailwind CSS + custom design system |
-| Backend | Next.js API Routes |
-| Database | PostgreSQL (Render) via Prisma ORM |
-| Auth | NextAuth.js (credentials + optional Google OAuth) |
-| Images | Cloudinary |
-| Forms | React Hook Form + Zod |
-| Toasts | Sonner |
+| Runtime | Node.js 18+ |
+| HTTP | Express.js 4 |
+| Database | MongoDB via Mongoose 8 |
+| Sessions | `express-session` + `connect-mongo` (server-side store) |
+| Passwords | `bcryptjs`, cost factor 12 |
+| Validation | Zod schemas at the route boundary |
+| Views | EJS, server-rendered |
+| Tests | Jest + Supertest against a real MongoDB |
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## Architecture
 
-### 1. Clone & Install
+The application is layered so that routing, business logic and data access can be
+exercised independently:
+
+```
+HTTP request
+    │
+    ▼
+routes/         Path, HTTP verb, and the middleware chain that guards it
+    │           (requireAuth → requireSeller → validate)
+    ▼
+validators/     Zod schemas. Coerce and whitelist input; unknown fields
+    │           never reach a model.
+    ▼
+controllers/    Thin HTTP adapters. Read the validated request, call one
+    │           service, shape the response. No queries, no rules.
+    ▼
+services/       All business logic and every authorization decision
+    │           ("is this seller the owner of this listing?").
+    ▼
+repositories/   Query construction and collection access. No policy.
+    │
+    ▼
+models/         Mongoose schemas, indexes and instance helpers.
+```
+
+Two properties fall out of this split:
+
+- **Services are testable without HTTP.** `tests/unit/listingService.test.js`
+  drives ownership rules and search behaviour by calling functions directly.
+- **Query building is testable without a database.**
+  `listingRepository.buildSearchFilter` is a pure function, asserted in
+  `tests/unit/listingRepository.test.js`.
+
+The server-rendered pages call the *same services* the JSON API does, so a page
+and its endpoint can never disagree about what a user is allowed to see. Page
+routes handle `GET` only; every mutation goes through `/api/v1`.
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 18 or newer
+- A MongoDB instance (local `mongod`, Docker, or Atlas)
+
+### Install and configure
 
 ```bash
 git clone <your-repo-url>
 cd car-marketplace
 npm install
+
+cp .env.example .env
 ```
 
-### 2. Set Up Environment Variables
-
-Copy the example file and fill in your values:
-
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local`:
+Fill in `.env`:
 
 ```env
-# PostgreSQL (local or Render)
-DATABASE_URL=postgresql://user:password@localhost:5432/car_marketplace
-DIRECT_URL=postgresql://user:password@localhost:5432/car_marketplace
-
-# NextAuth (generate with: openssl rand -base64 32)
-NEXTAUTH_SECRET=your-secret-here
-NEXTAUTH_URL=http://localhost:3000
-
-# Cloudinary (from cloudinary.com dashboard)
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
+MONGODB_URI=mongodb://127.0.0.1:27017/car_marketplace
+SESSION_SECRET=<node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+PORT=3000
 ```
 
-### 3. Set Up Local PostgreSQL (macOS)
+### Run
 
 ```bash
-# Install PostgreSQL via Homebrew
-brew install postgresql@16
-brew services start postgresql@16
-
-# Create database
-psql -U postgres -c "CREATE DATABASE car_marketplace;"
+npm run seed     # optional: 4 accounts, 16 listings, sample inquiries
+npm run dev      # nodemon, http://localhost:3000
+npm start        # production
 ```
 
-### 4. Run Migrations
+Seeded accounts all use the password `Password123`:
 
-```bash
-npx prisma migrate dev --name init
-```
-
-### 5. Seed the Database
-
-```bash
-npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
-```
-
-Or install ts-node globally:
-```bash
-npm install -g ts-node
-ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
-```
-
-**Seed creates:**
-- 3 demo users (admin, seller, buyer)
-- 8 sample car listings (BMW, Mercedes, Tesla, Audi, Porsche, Ford, Toyota, Honda)
-- 2 sample inquiries
-
-**Test credentials:**
-- Seller: `seller@carmarket.com` / `Password123!`
-- Buyer: `buyer@carmarket.com` / `Password123!`
-- Admin: `admin@carmarket.com` / `Password123!`
-
-### 6. Run Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
----
-
-## ☁️ Deployment (Vercel + Render)
-
-### Step 1 — Create Render PostgreSQL Database
-
-1. Sign up at [render.com](https://render.com)
-2. Go to **New → PostgreSQL**
-3. Set name: `carmarket-db`, choose a region closest to you
-4. After creation, copy the **"External Database URL"**
-
-### Step 2 — Deploy to Vercel
-
-1. Push your code to GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) and import your repo
-3. **Before deploying**, add ALL environment variables:
-
-| Variable | Value |
+| Email | Role |
 |---|---|
-| `DATABASE_URL` | Render "External Database URL" |
-| `DIRECT_URL` | Same as DATABASE_URL |
-| `NEXTAUTH_SECRET` | Generate: `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | Your Vercel URL (e.g. `https://carmarket.vercel.app`) |
-| `CLOUDINARY_CLOUD_NAME` | From Cloudinary dashboard |
-| `CLOUDINARY_API_KEY` | From Cloudinary dashboard |
-| `CLOUDINARY_API_SECRET` | From Cloudinary dashboard |
+| `dana@example.com` | seller |
+| `marcus@example.com` | seller |
+| `priya@example.com` | buyer |
+| `sam@example.com` | buyer |
 
-4. Click **Deploy**
+### Scripts
 
-The `vercel.json` build command automatically runs:
-```bash
-prisma generate && prisma migrate deploy && next build
+| Command | Purpose |
+|---|---|
+| `npm start` | Start the server |
+| `npm run dev` | Start with reload on change |
+| `npm run seed` | Reset and repopulate the database, then build indexes |
+| `npm test` | Full Jest suite |
+| `npm run test:unit` | Services, repositories, utilities |
+| `npm run test:integration` | HTTP surface through Supertest |
+| `npm run lint` | ESLint |
+
+---
+
+## Data model
+
+Three collections: `users`, `listings`, `inquiries`.
+
+The schemas are shaped around **the platform's dominant read**: the search
+results page, which renders dozens of listing cards at a time and is by far the
+most-requested view.
+
+### Denormalized seller snapshot
+
+Each listing embeds the seller's display details:
+
+```js
+seller: { id: ObjectId, name: String, email: String, phone: String }
 ```
 
-### Step 3 — Verify Deployment
+A results page is therefore **a single indexed `find`** — no per-card lookup into
+`users`, and no `$lookup` stage. The cost is that a seller editing their profile
+has to fan the change out to their listings, which
+`listingRepository.updateSellerSnapshot` does in one `updateMany`. That write
+happens orders of magnitude less often than a search.
 
-After deploy, check:
-- [ ] `https://your-app.vercel.app/api/listings` returns data
-- [ ] Auth signup + login works
-- [ ] Image upload works
-- [ ] `NEXTAUTH_URL` matches your exact Vercel domain
+Inquiries denormalize the same way, embedding a listing snapshot
+(`title`, `price`, `image`) and the buyer's contact details, so both the seller's
+inbox and the buyer's sent list render from one query each.
 
-### Step 4 — Seed Production (Optional)
+### Constraints enforced by the database
 
-```bash
-DATABASE_URL="<your-render-external-url>" npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+- `users.email` — unique index. A read-then-write check races under concurrent
+  signups; the index does not.
+- `inquiries.(listing.id, buyer.id)` — unique index, giving one inquiry per buyer
+  per listing.
+- `users.passwordHash` — `select: false`, so no query returns the hash unless it
+  explicitly asks for it.
+
+---
+
+## Indexing strategy
+
+Every buyer-facing query filters on `status: 'active'`, so that field leads each
+compound index, followed by the equality fields (`make`, `model`) and then the
+ranges (`year`, `price`). The goal is that **no search path falls back to a
+collection scan**, and that the common browse orderings get their sort from the
+index rather than from an in-memory sort.
+
+| Index | Fields | Serves |
+|---|---|---|
+| `search_make_model_year_price` | `status, make, model, year, price` | The primary search. A `make`-only or `make + model` query uses the same index via its prefix. |
+| `search_price_year` | `status, price, year` | Price-led browsing ("everything under $15k, cheapest first") where no make is given. |
+| `browse_recent` | `status, createdAt` | The default landing view. |
+| `seller_dashboard` | `seller.id, status, createdAt` | One seller's listings across every status. |
+| `listing_text` | text on `title, description, make, model` | Keyword search, weighted toward the title. |
+| `seller_inbox` | `sellerId, status, createdAt` | Inquiries received, optionally unread-only. |
+| `buyer_sent` | `buyer.id, createdAt` | Inquiries sent. |
+
+### Measured plans
+
+Taken from `explain('executionStats')` against the seeded dataset. Every path is
+an `IXSCAN`; none is a `COLLSCAN`.
+
+| Query | Plan |
+|---|---|
+| Default browse, newest first | `FETCH ← IXSCAN [browse_recent]` — sort provided by the index |
+| Price range, cheapest first | `FETCH ← IXSCAN [search_price_year]` — sort provided by the index |
+| make + model + year + price | `IXSCAN [search_make_model_year_price]`, 2 keys examined for 1 result |
+| make only, newest first | `IXSCAN [search_make_model_year_price]` + `SORT` |
+| Seller dashboard | `IXSCAN [seller_dashboard]` + `SORT` |
+
+The last two add an in-memory `SORT` stage, because `createdAt` is not a
+contiguous suffix of the index once a range or a skipped field intervenes. That
+sort runs over the already-filtered result set — a handful of documents, not the
+collection — so it stays cheap; the scan itself is still index-driven. The
+alternative would be another index per sort order, which would cost more on
+every write than it saves on these reads.
+
+Indexes are declared on the schemas and built by `npm run seed` (or
+`database.syncIndexes()`). `autoIndex` is off in production so index builds
+happen in a deploy step, not in the request path of a freshly booted process.
+
+To confirm the plan against your own data:
+
+```js
+db.listings
+  .find({ status: 'active', make: 'Toyota', model: 'Corolla',
+          year: { $gte: 2015 }, price: { $lte: 30000 } })
+  .explain('executionStats');
+// winningPlan … stage: 'IXSCAN', indexName: 'search_make_model_year_price'
+// executionStats.totalDocsExamined ≈ nReturned  (no collection scan)
 ```
 
 ---
 
-## 📁 Project Structure
+## Search, filtering and pagination
+
+`GET /api/v1/listings` accepts these parameters, combinable in any mix:
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `q` | string | Full-text search across title, description, make, model |
+| `make`, `model` | string | Case-insensitive exact match |
+| `minYear`, `maxYear` | int | Range |
+| `minPrice`, `maxPrice` | int | Range |
+| `maxMileage` | int | Upper bound |
+| `fuelType` | enum | petrol, diesel, hybrid, electric, cng, lpg |
+| `transmission` | enum | manual, automatic |
+| `location` | string | Substring match |
+| `sort` | enum | `newest`, `oldest`, `price_asc`, `price_desc`, `year_desc`, `year_asc`, `mileage_asc` |
+| `page` | int | Defaults to 1 |
+| `limit` | int | Defaults to 12, **capped server-side at `MAX_PAGE_SIZE` (50)** |
+
+Two things keep the response payload flat as the collection grows:
+
+1. **`limit` is clamped server-side.** A request for `limit=100000` returns 50
+   results, not the collection. Validators check that the value is a positive
+   integer; `utils/pagination` owns the cap.
+2. **List endpoints project down to summary fields.** `description` is omitted
+   and the image array is sliced to its first entry
+   (`Listing.SUMMARY_PROJECTION`), so a results page costs roughly the same bytes
+   per listing however much prose a seller wrote. The full document is returned
+   only by `GET /listings/:id`.
+
+Every list response carries the same meta block:
+
+```json
+{
+  "success": true,
+  "data": [ /* … */ ],
+  "meta": {
+    "page": 2, "limit": 12, "total": 137,
+    "totalPages": 12, "hasNextPage": true, "hasPrevPage": true
+  }
+}
+```
+
+---
+
+## Authentication and authorization
+
+**Signup and login** — `POST /api/v1/auth/register` and `/login`. Passwords are
+hashed with bcrypt at cost 12 and stored as `passwordHash`; the plain text exists
+only inside `authService`. A wrong password and an unknown account produce the
+same 401 with the same message, so the endpoint cannot be used to enumerate
+registered addresses.
+
+**Session management** — `express-session` with `connect-mongo` as the store. The
+cookie carries nothing but a signed session id; the user id and role live
+server-side where a client cannot edit them. The cookie is `httpOnly`,
+`sameSite=lax`, and `secure` in production. The session id is **regenerated on
+sign-in** so a pre-auth id cannot be reused once privileges change.
+
+**Authorization** runs server-side on every protected route, in two stages:
+
+1. `requireAuth` and `requireRole(...)` in `middleware/auth.js` read the role
+   from the **session only** — never from a request body, query string or header.
+   A buyer session hitting `POST /api/v1/listings` gets a 403 before any handler
+   runs.
+2. The service layer then checks *ownership*, because only it knows whether this
+   seller owns *this* listing. `listingService.requireOwnedListing` is the single
+   funnel for every seller mutation.
+
+The rendered pages are gated by the same rules (`requireSellerPage`), so
+navigating to `/dashboard` or `/cars/new` with a buyer session is refused rather
+than rendered. Identity is always taken from the session: posting a `seller`
+object in a create-listing body does not change who the listing belongs to, and
+both cases are covered by tests.
+
+---
+
+## REST API reference
+
+Base path: `/api/v1`. All responses are `{ success, data }` or
+`{ success: false, error: { message, details? } }`.
+
+### Auth
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `POST` | `/auth/register` | public | Create an account (`role`: buyer or seller) and start a session |
+| `POST` | `/auth/login` | public | Sign in |
+| `POST` | `/auth/logout` | public | Destroy the session |
+| `GET` | `/auth/me` | session | Current user |
+| `POST` | `/auth/password` | session | Change password |
+
+### Listings
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/listings` | public | Paginated multi-parameter search (active only) |
+| `GET` | `/listings/filters` | public | Distinct makes and models for the search form |
+| `GET` | `/listings/:id` | public | One listing (drafts visible only to their seller) |
+| `GET` | `/listings/mine` | **seller** | The caller's own listings, drafts included |
+| `GET` | `/listings/stats` | **seller** | Dashboard counters |
+| `POST` | `/listings` | **seller** | Publish a listing |
+| `PATCH` | `/listings/:id` | **seller, owner** | Update |
+| `PATCH` | `/listings/:id/status` | **seller, owner** | Draft / active / sold |
+| `DELETE` | `/listings/:id` | **seller, owner** | Delete, cascading its inquiries |
+
+### Inquiries
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `POST` | `/inquiries` | session | Raise an inquiry on an active listing |
+| `GET` | `/inquiries/sent` | session | The caller's own inquiries |
+| `GET` | `/inquiries/received` | **seller** | Inbox for the caller's listings |
+| `GET` | `/inquiries/:id` | either party | One inquiry |
+| `PATCH` | `/inquiries/:id/read` | **recipient** | Mark read |
+| `POST` | `/inquiries/:id/reply` | **recipient** | Reply |
+| `DELETE` | `/inquiries/:id` | either party | Withdraw or clear |
+
+### Users
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/users/me` | session | Full profile |
+| `PATCH` | `/users/me` | session | Update name, phone, location (fans out to listing snapshots) |
+| `POST` | `/users/me/become-seller` | session | Upgrade a buyer account to a seller account |
+| `DELETE` | `/users/me` | session | Delete the account and its listings |
+| `GET` | `/users/:id` | public | Public seller profile |
+| `GET` | `/users` | **admin** | Paginated user directory |
+
+`GET /api/v1/health` reports process uptime and connection state.
+
+### Example
+
+```bash
+# Sign in, keeping the session cookie
+curl -c cookies.txt -X POST http://localhost:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"dana@example.com","password":"Password123"}'
+
+# Search: Toyotas from 2018 on, under $20k, cheapest first
+curl 'http://localhost:3000/api/v1/listings?make=Toyota&minYear=2018&maxPrice=20000&sort=price_asc&limit=5'
+
+# Publish a listing (seller session required)
+curl -b cookies.txt -X POST http://localhost:3000/api/v1/listings \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"2020 Mazda CX-5 Sport","make":"Mazda","model":"CX-5","year":2020,
+       "price":20400,"mileage":38900,"description":"Full service history.","status":"active"}'
+```
+
+---
+
+## Testing
+
+```bash
+npm test
+```
+
+The suite runs against a **real MongoDB**, not a stubbed driver, so the unique
+indexes and query planner behave as they do in production.
+
+- By default it starts an ephemeral `mongodb-memory-server`.
+- Set `TEST_MONGODB_URI` to use an existing server instead — what CI does with a
+  service container. Each test file gets its own database, dropped afterwards.
+
+```bash
+TEST_MONGODB_URI=mongodb://127.0.0.1:27017 npm test
+```
+
+Coverage is split along the architecture:
+
+| Suite | What it pins down |
+|---|---|
+| `unit/pagination` | Clamping, skip arithmetic, meta |
+| `unit/listingRepository` | Filter construction, including regex escaping of user input |
+| `unit/authService` | Hashing, duplicate emails, no admin self-assignment, non-enumerable login errors |
+| `unit/listingService` | Search combinations, draft visibility, ownership, non-editable fields |
+| `unit/inquiryService` | Duplicate prevention, counters, who may read and reply |
+| `integration/auth.api` | Session lifecycle, cookie flags, session regeneration |
+| `integration/listings.api` | Role gates, ownership across HTTP, payload shape, `limit` cap |
+| `integration/inquiries.api` | Inbox separation, identity taken from session not body |
+| `integration/pages` | Rendered pages enforce the same role rules as the API |
+
+---
+
+## Project layout
 
 ```
 src/
-├── app/
-│   ├── api/
-│   │   ├── auth/
-│   │   │   ├── [...nextauth]/route.ts  # NextAuth handler
-│   │   │   └── signup/route.ts         # User registration
-│   │   ├── listings/
-│   │   │   ├── route.ts                # GET list, POST create
-│   │   │   └── [id]/route.ts           # GET, PUT, DELETE single
-│   │   ├── inquiries/
-│   │   │   ├── route.ts                # POST send inquiry
-│   │   │   ├── received/route.ts       # GET seller's inquiries
-│   │   │   └── [id]/route.ts           # PATCH mark read
-│   │   └── upload/route.ts             # POST Cloudinary upload
-│   ├── auth/
-│   │   ├── login/page.tsx              # Login form
-│   │   └── signup/page.tsx             # Signup form
-│   ├── cars/
-│   │   ├── page.tsx                    # Browse + filter listings
-│   │   └── [id]/page.tsx               # Car detail + inquiry
-│   ├── dashboard/
-│   │   ├── page.tsx                    # Seller dashboard
-│   │   └── listings/
-│   │       ├── new/page.tsx            # Post new listing
-│   │       └── [id]/edit/page.tsx      # Edit listing
-│   ├── layout.tsx                      # Root layout
-│   └── page.tsx                        # Homepage
-├── components/
-│   ├── ui/                             # Base UI components
-│   ├── navbar.tsx
-│   ├── listing-card.tsx
-│   ├── listing-form.tsx                # Create/edit form
-│   ├── dashboard-tabs.tsx
-│   ├── image-gallery.tsx
-│   ├── inquiry-form.tsx
-│   └── cars-filter.tsx
-├── lib/
-│   ├── auth.ts                         # NextAuth config
-│   ├── prisma.ts                       # Prisma singleton
-│   ├── cloudinary.ts                   # Upload utilities
-│   ├── utils.ts                        # Shared helpers
-│   ├── validations/index.ts            # Zod schemas
-│   └── db/
-│       ├── listings.ts                 # Listing queries
-│       ├── inquiries.ts                # Inquiry queries
-│       └── users.ts                    # User queries
-└── middleware.ts                        # Auth route protection
-prisma/
-├── schema.prisma                        # Database schema
-└── seed.ts                              # Demo data
+├── app.js                  Express wiring, exported as a factory for tests
+├── server.js               Entry point: connect, listen, graceful shutdown
+├── config/
+│   ├── env.js              Single validated view of process.env
+│   ├── database.js         Mongoose connection and index sync
+│   └── session.js          Session store and cookie policy
+├── models/                 Mongoose schemas, indexes, instance helpers
+│   ├── User.js
+│   ├── Listing.js
+│   └── Inquiry.js
+├── repositories/           Query construction and collection access
+├── services/               Business logic and authorization decisions
+├── controllers/            HTTP adapters (API) and page renderers
+├── routes/
+│   ├── api/                /api/v1 — auth, listings, inquiries, users
+│   └── web.routes.js       Server-rendered pages (GET only)
+├── middleware/             auth, validate, asyncHandler, errorHandler, rateLimit
+├── validators/             Zod schemas per resource
+├── utils/                  ApiError, pagination, constants
+├── views/                  EJS layout, partials and pages
+├── public/                 Stylesheet and progressive-enhancement JS
+└── scripts/seed.js         Development dataset
+
+tests/
+├── setup.js                Database fixture
+├── helpers/                Factories and an authenticated Supertest agent
+├── unit/
+└── integration/
 ```
 
 ---
 
-## 🔧 Available Scripts
+## Environment variables
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run db:generate` | Generate Prisma client |
-| `npm run db:migrate` | Run migrations (dev) |
-| `npm run db:push` | Push schema changes (no migration) |
-| `npm run db:studio` | Open Prisma Studio |
-
----
-
-## 🌍 Environment Variables Reference
-
-See [`.env.example`](.env.example) for all required variables.
-
-| Variable | Required | Description |
+| Variable | Default | Purpose |
 |---|---|---|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `DIRECT_URL` | ✅ | Direct PostgreSQL URL (same as DATABASE_URL for Render) |
-| `NEXTAUTH_SECRET` | ✅ | Random string for JWT signing |
-| `NEXTAUTH_URL` | ✅ | Your app's base URL |
-| `CLOUDINARY_CLOUD_NAME` | ✅ | Cloudinary cloud name |
-| `CLOUDINARY_API_KEY` | ✅ | Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | ✅ | Cloudinary API secret |
-| `GOOGLE_CLIENT_ID` | ❌ | Google OAuth (optional) |
-| `GOOGLE_CLIENT_SECRET` | ❌ | Google OAuth (optional) |
-
----
-
-## 🔐 Security
-
-- Passwords hashed with bcrypt (12 rounds)
-- `passwordHash` never returned in API responses
-- JWT-based sessions via NextAuth
-- Route-level protection via Next.js middleware
-- All mutations verify ownership before proceeding
-- Sellers cannot send inquiries on their own listings
-- Duplicate inquiry prevention at DB level (unique constraint)
-
----
-
-## 📝 Default Assumptions
-
-- **Role:** New users default to `BUYER`. During signup, users can choose `BUYER` or `SELLER`.
-- **Images:** Stored on Cloudinary. Fallback to Unsplash placeholder images in seed data.
-- **Currency:** USD only.
-- **Inquiry:** One inquiry per buyer per listing (enforced at DB level).
-- **Listing status:** `ACTIVE` (visible), `DRAFT` (hidden), `SOLD` (closed).
+| `NODE_ENV` | `development` | Enables production hardening when `production` |
+| `PORT` | `3000` | HTTP port |
+| `MONGODB_URI` | — | **Required.** Connection string |
+| `SESSION_SECRET` | — | **Required.** Signing key for the session cookie |
+| `SESSION_NAME` | `cm.sid` | Cookie name |
+| `SESSION_TTL_MS` | `604800000` | Session lifetime (7 days) |
+| `MAX_PAGE_SIZE` | `50` | Hard cap on `limit` |
+| `TRUST_PROXY` | `0` | Set to `1` behind a TLS-terminating proxy |
+| `TEST_MONGODB_URI` | — | Tests only: use this server instead of an in-memory one |

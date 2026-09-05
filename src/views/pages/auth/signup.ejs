@@ -1,0 +1,45 @@
+<section class="narrow auth">
+  <h1>Create an account</h1>
+
+  <form class="card" data-auth-form="register">
+    <label>
+      Name
+      <input type="text" name="name" minlength="2" maxlength="80" autocomplete="name" required />
+    </label>
+    <label>
+      Email
+      <input type="email" name="email" autocomplete="email" required />
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" minlength="8" autocomplete="new-password" required />
+      <small class="muted">At least 8 characters, including a letter and a number.</small>
+    </label>
+
+    <fieldset class="role-choice">
+      <legend>I want to</legend>
+      <label class="radio">
+        <input type="radio" name="role" value="buyer" checked />
+        <span><strong>Buy a car</strong><br /><small class="muted">Browse listings and contact sellers.</small></span>
+      </label>
+      <label class="radio">
+        <input type="radio" name="role" value="seller" />
+        <span><strong>Sell a car</strong><br /><small class="muted">Publish and manage your own listings.</small></span>
+      </label>
+    </fieldset>
+
+    <label>
+      Phone (optional)
+      <input type="tel" name="phone" maxlength="30" autocomplete="tel" />
+    </label>
+    <label>
+      Location (optional)
+      <input type="text" name="location" maxlength="120" placeholder="Austin, TX" />
+    </label>
+
+    <button class="btn btn-primary btn-block" type="submit">Create account</button>
+    <p class="form-error" data-error hidden></p>
+  </form>
+
+  <p class="muted">Already registered? <a href="/login">Sign in</a>.</p>
+</section>

@@ -1,0 +1,35 @@
+<section class="hero">
+  <h1>Find your next car</h1>
+  <p class="lead">Browse verified listings from private sellers, or post your own in minutes.</p>
+
+  <form class="hero-search" action="/cars" method="get">
+    <input type="search" name="q" placeholder="Try “diesel estate” or “Civic”" aria-label="Search listings" />
+    <select name="make" aria-label="Make">
+      <option value="">Any make</option>
+      <% makes.forEach((make) => { %>
+        <option value="<%= make %>"><%= make %></option>
+      <% }); %>
+    </select>
+    <input type="number" name="maxPrice" placeholder="Max price" min="0" aria-label="Maximum price" />
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Latest listings</h2>
+    <a href="/cars">See all →</a>
+  </div>
+
+  <% if (!listings.length) { %>
+    <div class="empty-state">
+      <p>No listings yet. <a href="/signup">Create a seller account</a> to post the first one.</p>
+    </div>
+  <% } else { %>
+    <div class="grid">
+      <% listings.forEach((listing) => { %>
+        <%- include('../partials/listing-card', { listing }) %>
+      <% }); %>
+    </div>
+  <% } %>
+</section>
